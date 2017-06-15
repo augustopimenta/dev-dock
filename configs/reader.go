@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"gopkg.in/yaml.v2"
 	"os"
+	"strings"
 )
 
 const configFile = "config.yaml"
@@ -22,7 +23,14 @@ type Project struct {
 }
 
 func (project Project) ToSlice() []string {
-	return []string { project.Name, project.Domain, project.Image, "DOWN", "", "" }
+	return []string {
+		project.Name,
+		project.Domain,
+		project.Image,
+		"[DOWN]",
+		strings.Join(project.Volumes, "\n"),
+		strings.Join(project.Ports, "\n"),
+	}
 }
 
 func Exists() bool {
