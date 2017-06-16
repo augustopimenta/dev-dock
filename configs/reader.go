@@ -1,10 +1,11 @@
 package configs
 
 import (
-	"io/ioutil"
-	"gopkg.in/yaml.v2"
 	"os"
 	"strings"
+	"io/ioutil"
+
+	"gopkg.in/yaml.v2"
 )
 
 const configFile = "config.yaml"
@@ -61,4 +62,15 @@ func Read() ConfigFile {
 		panic(err)
 	}
 	return conf
+}
+
+func Find(name string) *Project {
+	config := Read()
+	for _, project := range config.Projects {
+		if project.Name == name {
+			return &project
+		}
+	}
+
+	return nil
 }

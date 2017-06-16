@@ -55,25 +55,50 @@ func main() {
 			UsageText: "new name - Create a new project",
 			ArgsUsage: "[name]",
 			Action: func(c *cli.Context) error {
-				projectName := c.Args().First()
-				if (projectName == "") {
+				name := c.Args().First()
+				if (name == "") {
 					fmt.Println("Project name require")
 					return nil
 				}
-				fmt.Printf("Starting \"%v\"...\n", projectName)
 
-				docker.StartProxyContainer()
+				project := configs.Find(name)
+				if (project == nil) {
+					fmt.Printf("Project \"%s\" not found\n", name)
+					return nil;
+				}
+
+				fmt.Printf("Starting \"%v\"...\n\n", name)
+
+				//docker.StartProxyContainer()
+				docker.StartProjectContainer(*project)
+
 				return nil
 			},
 		},
-		//{
-		//	Name: "down",
-		//	Aliases: []string{"d"},
-		//	Usage: "Finish a started project",
-		//	Action: func(c *cli.Context) error {
-		//		return nil
-		//	},
-		//},
+		{
+			Name: "down",
+			Aliases: []string{"d"},
+			Usage: "Finish a started project",
+			Action: func(c *cli.Context) error {
+				name := c.Args().First()
+				if (name == "") {
+					fmt.Println("Project name require")
+					return nil
+				}
+
+				project := configs.Find(name)
+				if (project == nil) {
+					fmt.Printf("Project \"%s\" not found\n", name)
+					return nil;
+				}
+
+				fmt.Printf("Finishing \"%v\"...\n\n", name)
+
+				docker.FinishProjectContainer(*project)
+
+				return nil
+			},
+		},
 	}
 
 	app.Action = func(c *cli.Context) error {

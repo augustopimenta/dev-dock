@@ -9,6 +9,8 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
+	"encoding/json"
+	"fmt"
 )
 
 type Api struct {
@@ -31,15 +33,53 @@ func (api *Api) Run(c *Container) {
 	api.startContainer(c)
 }
 
-func (api *Api) Remove(c *Container) {
+func (api *Api) Has(c *Container) bool {
+	_, err := api.client.ContainerInspect(api.context, c.Name)
+	if (err != nil) {
+		return false
+	}
 
+	return true
+}
+
+func (api *Api) Remove(c *Container) {
+	err := api.client.ContainerRemove(api.context, c.Name, types.ContainerRemoveOptions{Force: true})
+	if (err != nil) {
+		panic(err)
+	}
 }
 
 func (api *Api) pullImage(image string) {
 	out, err := api.client.ImagePull(api.context, image, types.ImagePullOptions{})
 	if (err != nil) {
-		panic(err)
+		println("Error: " +  err.Error())
+		os.Exit(1)
 	}
+
+	data := json.NewDecoder(out)
+
+	type Event struct {
+		Status         string `json:"status"`
+		Error          string `json:"error"`
+		Progress       string `json:"progress"`
+		ProgressDetail struct {
+			Current int `json:"current"`
+			Total   int `json:"total"`
+		} `json:"progressDetail"`
+	}
+
+	var event Event
+	for {
+		if err := data.Decode(&event); err != nil {
+			if err == io.EOF {
+				fmt.Println("")
+				break
+			}
+			panic(err)
+		}
+		fmt.Printf("%v: %v\n", event.Status, event.Progress)
+	}
+	
 	io.Copy(os.Stdout, out)
 }
 
@@ -48,7 +88,6 @@ func (api *Api) findContainer(c *Container) {
 }
 
 func (api *Api) createContainer(c *Container) {
-
 	exposedPorts := make(nat.PortSet)
 	portBindings := make(nat.PortMap)
 
@@ -61,7 +100,7 @@ func (api *Api) createContainer(c *Container) {
 
 	hostConfigs := &container.HostConfig{Binds: c.Volumes, PortBindings: portBindings}
 
-	resp, err := api.client.ContainerCreate(api.context, containerConfigs, hostConfigs, nil, "reverse-proxy")
+	resp, err := api.client.ContainerCreate(api.context, containerConfigs, hostConfigs, nil, c.Name)
 	if err != nil {
 		panic(err)
 	}
