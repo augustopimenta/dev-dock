@@ -3,7 +3,7 @@ package docker
 import (
 	"strings"
 
-	"devdock/projects"
+	"devdock/configs"
 	"github.com/docker/docker/api/types"
 	"fmt"
 )
@@ -17,7 +17,7 @@ type Container struct {
 	Envs []string
 }
 
-func fromProject(project projects.Project) *Container {
+func fromProject(project configs.Project) *Container {
 	ports := make(map[string]string);
 
 	for _, port := range project.Ports {
@@ -62,7 +62,7 @@ func StartProxyContainer() {
 	}
 }
 
-func GetProjectContainer(project projects.Project) *types.ContainerJSON {
+func GetProjectContainer(project configs.Project) *types.ContainerJSON {
 	api := Api{}
 	api.Init()
 
@@ -71,7 +71,7 @@ func GetProjectContainer(project projects.Project) *types.ContainerJSON {
 	return api.Get(container);
 }
 
-func StartProjectContainer(project projects.Project) {
+func StartProjectContainer(project configs.Project) {
 	api := Api{}
 	api.Init()
 
@@ -83,7 +83,7 @@ func StartProjectContainer(project projects.Project) {
 	api.Run(container)
 }
 
-func FinishProjectContainer(project projects.Project) {
+func FinishProjectContainer(project configs.Project) {
 	api := Api{}
 	api.Init()
 

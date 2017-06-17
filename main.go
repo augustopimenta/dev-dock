@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"devdock/docker"
-	"devdock/projects"
+	"devdock/configs"
 
 	"github.com/urfave/cli"
 	"github.com/olekukonko/tablewriter"
@@ -36,27 +36,8 @@ func main() {
 		{
 			Name: "list",
 			Aliases: []string{"l"},
-			Usage: "List all projects",
-			Action: func(c *cli.Context) error {
-				table := tablewriter.NewWriter(os.Stdout)
-				table.SetHeader([]string{"NAME", "DOMAIN", "IMAGE", "STATUS", "VOLUMES", "PORTS"})
-
-				confs := projects.Read()
-				for _, project := range confs.Projects {
-					container := docker.GetProjectContainer(project);
-					if container != nil {
-						project.Status = strings.ToUpper(container.State.Status)
-					} else {
-						project.Status = "DOWN"
-					}
-					
-					table.Append(project.ToSlice())
-				}
-
-				table.Render()
-
-				return nil
-			},
+			Usage: "List all configs",
+			Action: handlerListAction,
 		},
 		{
 			Name: "up",
@@ -64,50 +45,13 @@ func main() {
 			Usage: "Start a project",
 			UsageText: "new name - Create a new project",
 			ArgsUsage: "[name]",
-			Action: func(c *cli.Context) error {
-				name := c.Args().First()
-				if (name == "") {
-					fmt.Println("Project name require")
-					return nil
-				}
-
-				project := projects.Find(name)
-				if (project == nil) {
-					fmt.Printf("Project \"%s\" not found\n", name)
-					return nil;
-				}
-
-				fmt.Printf("Starting \"%v\"...\n\n", name)
-
-				docker.StartProxyContainer()
-				docker.StartProjectContainer(*project)
-
-				return nil
-			},
+			Action: handlerUpAction,
 		},
 		{
 			Name: "down",
 			Aliases: []string{"d"},
 			Usage: "Finish a started project",
-			Action: func(c *cli.Context) error {
-				name := c.Args().First()
-				if (name == "") {
-					fmt.Println("Project name require")
-					return nil
-				}
-
-				project := projects.Find(name)
-				if (project == nil) {
-					fmt.Printf("Project \"%s\" not found\n", name)
-					return nil;
-				}
-
-				fmt.Printf("Finishing \"%v\"...\n\n", name)
-
-				docker.FinishProjectContainer(*project)
-
-				return nil
-			},
+			Action: handleDownAction,
 		},
 	}
 
@@ -116,27 +60,83 @@ func main() {
 		return nil
 	}
 
-	createConfigIfNotExists()
 	updateHosts()
 
 	app.Run(os.Args)
 }
 
-func createConfigIfNotExists() {
-	if !projects.Exists() {
-		projects.Create()
+func handlerListAction(c *cli.Context) error {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"NAME", "DOMAIN", "IMAGE", "STATUS", "VOLUMES", "PORTS"})
+
+	confs := configs.NewConfigFile()
+	for _, project := range confs.Projects {
+		container := docker.GetProjectContainer(project);
+
+		if container != nil {
+			project.Status = strings.ToUpper(container.State.Status)
+		} else {
+			project.Status = "DOWN"
+		}
+
+		table.Append(project.ToSlice())
 	}
+
+	table.Render()
+
+	return nil
+}
+
+func handlerUpAction(c *cli.Context) error {
+	name := c.Args().First()
+	if (name == "") {
+		fmt.Println("Project name require")
+		return nil
+	}
+
+	project := configs.NewConfigFile().FindProject(name)
+	if (project == nil) {
+		fmt.Printf("Project \"%s\" not found\n", name)
+		return nil;
+	}
+
+	fmt.Printf("Starting \"%v\"...\n\n", name)
+
+	docker.StartProxyContainer()
+	docker.StartProjectContainer(*project)
+
+	return nil
+}
+
+func handleDownAction(c *cli.Context) error {
+	name := c.Args().First()
+	if (name == "") {
+		fmt.Println("Project name require")
+		return nil
+	}
+
+	project := configs.NewConfigFile().FindProject(name)
+	if (project == nil) {
+		fmt.Printf("Project \"%s\" not found\n", name)
+		return nil;
+	}
+
+	fmt.Printf("Finishing \"%v\"...\n\n", name)
+
+	docker.FinishProjectContainer(*project)
+
+	return nil
 }
 
 func updateHosts() {
 	h := hosts.Hosts{Path:"/etc/hosts"}
 	if !h.IsWritable() {
-		fmt.Println("Error: You need sudo/root access to manage Docker containers and hosts file!")
+		fmt.Println("Error: You need root access to manage Docker containers and hosts file!")
 		os.Exit(0)
 	}
 	h.Load()
 
-	confs := projects.Read()
+	confs := configs.NewConfigFile()
 	for _, project := range confs.Projects {
 		h.Add("127.0.0.1", project.Domain)
 	}
