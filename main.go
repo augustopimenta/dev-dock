@@ -2,20 +2,22 @@ package main
 
 import (
 	"os"
+	"fmt"
+	"strings"
+
 	"devdock/docker"
-	"devdock/configs"
+	"devdock/projects"
 
 	"github.com/urfave/cli"
 	"github.com/olekukonko/tablewriter"
-	"fmt"
-	"strings"
+	"devdock/hosts"
 )
 
 func main() {
 	app := cli.NewApp()
 	app.Name = "Dev Dock"
 	app.Version = "0.0.1"
-	app.Usage = "Organize your Docker DEV Containers"
+	app.Usage = "Organize your Docker Development Containers"
 
 	app.Commands = []cli.Command{
 		//{
@@ -39,7 +41,7 @@ func main() {
 				table := tablewriter.NewWriter(os.Stdout)
 				table.SetHeader([]string{"NAME", "DOMAIN", "IMAGE", "STATUS", "VOLUMES", "PORTS"})
 
-				confs := configs.Read()
+				confs := projects.Read()
 				for _, project := range confs.Projects {
 					container := docker.GetProjectContainer(project);
 					if container != nil {
@@ -69,7 +71,7 @@ func main() {
 					return nil
 				}
 
-				project := configs.Find(name)
+				project := projects.Find(name)
 				if (project == nil) {
 					fmt.Printf("Project \"%s\" not found\n", name)
 					return nil;
@@ -77,7 +79,7 @@ func main() {
 
 				fmt.Printf("Starting \"%v\"...\n\n", name)
 
-				//docker.StartProxyContainer()
+				docker.StartProxyContainer()
 				docker.StartProjectContainer(*project)
 
 				return nil
@@ -94,7 +96,7 @@ func main() {
 					return nil
 				}
 
-				project := configs.Find(name)
+				project := projects.Find(name)
 				if (project == nil) {
 					fmt.Printf("Project \"%s\" not found\n", name)
 					return nil;
@@ -114,11 +116,31 @@ func main() {
 		return nil
 	}
 
-	if !configs.Exists() {
-		configs.Create()
-	}
+	createConfigIfNotExists()
+	updateHosts()
 
 	app.Run(os.Args)
 }
 
+func createConfigIfNotExists() {
+	if !projects.Exists() {
+		projects.Create()
+	}
+}
+
+func updateHosts() {
+	h := hosts.Hosts{Path:"/etc/hosts"}
+	if !h.IsWritable() {
+		fmt.Println("Error: You need sudo/root access to manage Docker containers and hosts file!")
+		os.Exit(0)
+	}
+	h.Load()
+
+	confs := projects.Read()
+	for _, project := range confs.Projects {
+		h.Add("127.0.0.1", project.Domain)
+	}
+
+	h.Flush()
+}
 

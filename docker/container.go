@@ -3,8 +3,9 @@ package docker
 import (
 	"strings"
 
-	"devdock/configs"
+	"devdock/projects"
 	"github.com/docker/docker/api/types"
+	"fmt"
 )
 
 type Container struct {
@@ -16,8 +17,7 @@ type Container struct {
 	Envs []string
 }
 
-
-func fromProject(project configs.Project) *Container {
+func fromProject(project projects.Project) *Container {
 	ports := make(map[string]string);
 
 	for _, port := range project.Ports {
@@ -27,6 +27,10 @@ func fromProject(project configs.Project) *Container {
 		} else {
 			ports[portsConfig[0] + "/tcp"] = portsConfig[1]
 		}
+	}
+
+	if project.Domain != "" {
+		project.Envs = append(project.Envs, fmt.Sprintf("VIRTUAL_HOST=%s", project.Domain))
 	}
 
 	container := &Container{
@@ -53,13 +57,12 @@ func StartProxyContainer() {
 		[]string{},
 	}
 
-	if api.Has(container) {
-		api.Remove(container)
+	if !api.Has(container) {
+		api.Run(container)
 	}
-	api.Run(container)
 }
 
-func GetProjectContainer(project configs.Project) *types.ContainerJSON {
+func GetProjectContainer(project projects.Project) *types.ContainerJSON {
 	api := Api{}
 	api.Init()
 
@@ -68,7 +71,7 @@ func GetProjectContainer(project configs.Project) *types.ContainerJSON {
 	return api.Get(container);
 }
 
-func StartProjectContainer(project configs.Project) {
+func StartProjectContainer(project projects.Project) {
 	api := Api{}
 	api.Init()
 
@@ -80,7 +83,7 @@ func StartProjectContainer(project configs.Project) {
 	api.Run(container)
 }
 
-func FinishProjectContainer(project configs.Project) {
+func FinishProjectContainer(project projects.Project) {
 	api := Api{}
 	api.Init()
 

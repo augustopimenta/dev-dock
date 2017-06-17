@@ -89,10 +89,6 @@ func (api *Api) pullImage(image string) {
 	io.Copy(os.Stdout, out)
 }
 
-func (api *Api) findContainer(c *Container) {
-
-}
-
 func (api *Api) createContainer(c *Container) {
 	exposedPorts := make(nat.PortSet)
 	portBindings := make(nat.PortMap)
@@ -102,7 +98,7 @@ func (api *Api) createContainer(c *Container) {
 		portBindings[nat.Port(cPort)] = []nat.PortBinding{{HostIP:"0.0.0.0", HostPort:hPort}}
 	}
 
-	containerConfigs := &container.Config{Image: c.Image, ExposedPorts: exposedPorts}
+	containerConfigs := &container.Config{Image: c.Image, ExposedPorts: exposedPorts, Env: c.Envs}
 
 	hostConfigs := &container.HostConfig{Binds: c.Volumes, PortBindings: portBindings}
 
