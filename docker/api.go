@@ -33,25 +33,31 @@ func (api *Api) Run(c *Container) {
 	api.startContainer(c)
 }
 
-func (api *Api) Has(c *Container) bool {
-	_, err := api.client.ContainerInspect(api.context, c.Name)
-	if (err != nil) {
-		return false
+func (api *Api) Get(c *Container) *types.ContainerJSON {
+	info, err := api.client.ContainerInspect(api.context, c.Name)
+	if err != nil {
+		return nil
 	}
 
-	return true
+	return &info
+}
+
+func (api *Api) Has(c *Container) bool {
+	_, err := api.client.ContainerInspect(api.context, c.Name)
+	
+	return err == nil
 }
 
 func (api *Api) Remove(c *Container) {
 	err := api.client.ContainerRemove(api.context, c.Name, types.ContainerRemoveOptions{Force: true})
-	if (err != nil) {
+	if err != nil {
 		panic(err)
 	}
 }
 
 func (api *Api) pullImage(image string) {
 	out, err := api.client.ImagePull(api.context, image, types.ImagePullOptions{})
-	if (err != nil) {
+	if err != nil {
 		println("Error: " +  err.Error())
 		os.Exit(1)
 	}

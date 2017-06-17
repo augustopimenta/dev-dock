@@ -8,6 +8,7 @@ import (
 	"github.com/urfave/cli"
 	"github.com/olekukonko/tablewriter"
 	"fmt"
+	"strings"
 )
 
 func main() {
@@ -39,8 +40,15 @@ func main() {
 				table.SetHeader([]string{"NAME", "DOMAIN", "IMAGE", "STATUS", "VOLUMES", "PORTS"})
 
 				confs := configs.Read()
-				for _, config := range confs.Projects {
-					table.Append(config.ToSlice())
+				for _, project := range confs.Projects {
+					container := docker.GetProjectContainer(project);
+					if container != nil {
+						project.Status = strings.ToUpper(container.State.Status)
+					} else {
+						project.Status = "DOWN"
+					}
+					
+					table.Append(project.ToSlice())
 				}
 
 				table.Render()

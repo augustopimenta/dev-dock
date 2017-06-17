@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"devdock/configs"
+	"github.com/docker/docker/api/types"
 )
 
 type Container struct {
@@ -41,6 +42,7 @@ func fromProject(project configs.Project) *Container {
 
 func StartProxyContainer() {
 	api := Api{}
+	api.Init()
 
 	container := &Container{
 		"",
@@ -51,19 +53,27 @@ func StartProxyContainer() {
 		[]string{},
 	}
 
-	api.Init()
 	if api.Has(container) {
 		api.Remove(container)
 	}
 	api.Run(container)
 }
 
-func StartProjectContainer(project configs.Project) {
+func GetProjectContainer(project configs.Project) *types.ContainerJSON {
 	api := Api{}
+	api.Init()
 
 	container := fromProject(project);
 
+	return api.Get(container);
+}
+
+func StartProjectContainer(project configs.Project) {
+	api := Api{}
 	api.Init()
+
+	container := fromProject(project);
+
 	if api.Has(container) {
 		api.Remove(container)
 	}
@@ -72,10 +82,10 @@ func StartProjectContainer(project configs.Project) {
 
 func FinishProjectContainer(project configs.Project) {
 	api := Api{}
+	api.Init()
 
 	container := fromProject(project);
 
-	api.Init()
 	if api.Has(container) {
 		api.Remove(container)
 	}
