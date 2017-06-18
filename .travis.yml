@@ -12,3 +12,5 @@ before_install:
   - mkdir -p $GOPATH/bin
 
 install: glide install -v
+
+script: go build
