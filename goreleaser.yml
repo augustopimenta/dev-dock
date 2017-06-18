@@ -6,3 +6,9 @@ build:
     - linux
   goarch:
     - amd64
+
+archive:
+  format: zip
+  replacements:
+    amd64: x64
+    darwin: macOS
