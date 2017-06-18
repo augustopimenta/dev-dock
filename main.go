@@ -4,19 +4,21 @@ import (
 	"os"
 	"fmt"
 	"strings"
+	"strconv"
+	"os/exec"
 
 	"devdock/docker"
 	"devdock/configs"
 
 	"github.com/urfave/cli"
 	"github.com/olekukonko/tablewriter"
-	"devdock/hosts"
+	"github.com/lextoumbourou/goodhosts"
 )
 
 func main() {
 	app := cli.NewApp()
 	app.Name = "Dev Dock"
-	app.Version = "0.0.1"
+	app.Version = "0.1.2"
 	app.Usage = "Organize your Docker Development Containers"
 
 	app.Commands = []cli.Command{
@@ -60,17 +62,24 @@ func main() {
 		return nil
 	}
 
+	checkForRootAccess()
+
 	updateHosts()
 
 	app.Run(os.Args)
 }
 
 func handlerListAction(c *cli.Context) error {
+	confs := configs.NewConfigFile()
+
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"NAME", "DOMAIN", "IMAGE", "STATUS", "VOLUMES", "PORTS"})
 
-	confs := configs.NewConfigFile()
 	for _, project := range confs.Projects {
+		if project.Name == configs.ExampleProjectName {
+			continue
+		}
+
 		container := docker.GetProjectContainer(project);
 
 		if container != nil {
@@ -134,19 +143,42 @@ func handleDownAction(c *cli.Context) error {
 	return nil
 }
 
-func updateHosts() {
-	h := hosts.Hosts{Path:"/etc/hosts"}
-	if !h.IsWritable() {
+func checkForRootAccess() {
+	cmd := exec.Command("id", "-u")
+	output, err := cmd.Output()
+
+	if err != nil {
+		panic(err)
+	}
+
+	id, err := strconv.Atoi(string(output[:len(output)-1]))
+
+	if err != nil {
+		panic(err)
+	}
+
+	if id != 0 {
 		fmt.Println("Error: You need root access to manage Docker containers and hosts file!")
 		os.Exit(0)
 	}
-	h.Load()
+}
 
-	confs := configs.NewConfigFile()
-	for _, project := range confs.Projects {
-		h.Add("127.0.0.1", project.Domain)
+func updateHosts() {
+	hosts, err := goodhosts.NewHosts()
+
+	if err != nil {
+		panic(err)
 	}
 
-	h.Flush()
+	confs := configs.NewConfigFile()
+
+	for _, project := range confs.Projects {
+		if project.Name == configs.ExampleProjectName {
+			continue
+		}
+		hosts.Add("127.0.0.1", project.Domain)
+	}
+
+	hosts.Flush()
 }
 

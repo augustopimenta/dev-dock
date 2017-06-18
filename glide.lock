@@ -1,5 +1,5 @@
-hash: f2d38cd7e5a536fa16cb55eeaa8e4df4a88b55ebbce8e57834fbb102ec47d213
-updated: 2017-06-11T18:12:40.519503367-03:00
+hash: 446930dd4d859a561dc43f9799cbce3ede59fc563356a1fd5cab1c0a3e4aa7b8
+updated: 2017-06-18T18:53:06.021702129-03:00
 imports:
 - name: github.com/docker/distribution
   version: 1e2f10eb65743fed02f573d31a4587de09afb20e
@@ -39,6 +39,8 @@ imports:
   version: 0dadbb0345b35ec7ef35e228dabb8de89a65bf52
 - name: github.com/docker/libtrust
   version: aabc10ec26b754e797f9028f4589c5b7bd90dc20
+- name: github.com/lextoumbourou/goodhosts
+  version: f9508a5690d9f48bfe5449d967cee37434591a29
 - name: github.com/mattn/go-runewidth
   version: 9e777a8366cce605130a531d2cd6363d07ad7317
 - name: github.com/Microsoft/go-winio

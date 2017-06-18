@@ -6,7 +6,7 @@ type Project struct {
 	Name string `yaml:"name"`
 	Domain string `yaml:"domain"`
 	Image string `yaml:"image"`
-	Status string
+	Status string `yaml:"-"`
 	Volumes []string `yaml:"volumes"`
 	Ports []string `yaml:"ports"`
 	Envs []string `yaml:"envs"`
