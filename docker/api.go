@@ -2,38 +2,40 @@ package docker
 
 import (
 	"io"
+	"fmt"
 	"os"
+	"sync"
 	"context"
+	"encoding/json"
 
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
-	"encoding/json"
-	"fmt"
 )
 
-type Api struct {
+type api struct {
 	context context.Context
 	client *client.Client
 }
 
-func (api *Api) Init() {
-	api.context = context.Background()
-	cli, err := client.NewEnvClient()
-	if (err != nil) {
-		panic(cli)
-	}
-	api.client = cli
+var instance *api
+var once sync.Once
+
+func GetInstance() *api {
+	once.Do(func() {
+		instance = newApi()
+	})
+	return instance
 }
 
-func (api *Api) Run(c *Container) {
+func (api *api) Run(c *Container) {
 	api.pullImage(c.Image)
 	api.createContainer(c)
 	api.startContainer(c)
 }
 
-func (api *Api) Get(c *Container) *types.ContainerJSON {
+func (api *api) Get(c *Container) *types.ContainerJSON {
 	info, err := api.client.ContainerInspect(api.context, c.Name)
 	if err != nil {
 		return nil
@@ -42,20 +44,31 @@ func (api *Api) Get(c *Container) *types.ContainerJSON {
 	return &info
 }
 
-func (api *Api) Has(c *Container) bool {
+func (api *api) Has(c *Container) bool {
 	_, err := api.client.ContainerInspect(api.context, c.Name)
 	
 	return err == nil
 }
 
-func (api *Api) Remove(c *Container) {
+func (api *api) Remove(c *Container) {
 	err := api.client.ContainerRemove(api.context, c.Name, types.ContainerRemoveOptions{Force: true})
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (api *Api) pullImage(image string) {
+func newApi() *api {
+	api := &api{}
+	api.context = context.Background()
+	cli, err := client.NewEnvClient()
+	if err != nil {
+		panic(cli)
+	}
+	api.client = cli
+	return api
+}
+
+func (api *api) pullImage(image string) {
 	out, err := api.client.ImagePull(api.context, image, types.ImagePullOptions{})
 	if err != nil {
 		println("Error: " +  err.Error())
@@ -89,7 +102,7 @@ func (api *Api) pullImage(image string) {
 	io.Copy(os.Stdout, out)
 }
 
-func (api *Api) createContainer(c *Container) {
+func (api *api) createContainer(c *Container) {
 	exposedPorts := make(nat.PortSet)
 	portBindings := make(nat.PortMap)
 
@@ -110,7 +123,7 @@ func (api *Api) createContainer(c *Container) {
 	c.Id = resp.ID
 }
 
-func (api *Api) startContainer(c *Container) {
+func (api *api) startContainer(c *Container) {
 	if err := api.client.ContainerStart(api.context, c.Id, types.ContainerStartOptions{}); err != nil {
 		panic(err)
 	}

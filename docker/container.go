@@ -1,11 +1,11 @@
 package docker
 
 import (
+	"fmt"
 	"strings"
 
 	"devdock/configs"
 	"github.com/docker/docker/api/types"
-	"fmt"
 )
 
 type Container struct {
@@ -45,8 +45,7 @@ func fromProject(project configs.Project) *Container {
 }
 
 func StartProxyContainer() {
-	api := Api{}
-	api.Init()
+	api := GetInstance()
 
 	container := &Container{
 		"",
@@ -62,9 +61,20 @@ func StartProxyContainer() {
 	}
 }
 
+func FinishProxyContainer() {
+	api := GetInstance()
+
+	container := &Container{
+		Name: "reverse-proxy",
+	}
+
+	if api.Has(container) {
+		api.Remove(container)
+	}
+}
+
 func GetProjectContainer(project configs.Project) *types.ContainerJSON {
-	api := Api{}
-	api.Init()
+	api := GetInstance()
 
 	container := fromProject(project);
 
@@ -72,8 +82,7 @@ func GetProjectContainer(project configs.Project) *types.ContainerJSON {
 }
 
 func StartProjectContainer(project configs.Project) {
-	api := Api{}
-	api.Init()
+	api := GetInstance()
 
 	container := fromProject(project);
 
@@ -84,8 +93,7 @@ func StartProjectContainer(project configs.Project) {
 }
 
 func FinishProjectContainer(project configs.Project) {
-	api := Api{}
-	api.Init()
+	api := GetInstance()
 
 	container := fromProject(project);
 

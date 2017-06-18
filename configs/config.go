@@ -10,6 +10,7 @@ import (
 const configFile = "config.yaml"
 
 type ConfigFile struct {
+	UseVirtualHost bool `yaml:"virtual-hosts"`
 	Projects []Project `yaml:"projects"`
 }
 
@@ -53,7 +54,7 @@ func read() ConfigFile {
 }
 
 func create() ConfigFile {
-	config := ConfigFile{[]Project{{}}}
+	config := ConfigFile{}
 	configYaml, _ := yaml.Marshal(config);
 	err := ioutil.WriteFile(configFile, []byte(configYaml), 0644)
 	if (err != nil) {

@@ -94,7 +94,8 @@ func handlerUpAction(c *cli.Context) error {
 		return nil
 	}
 
-	project := configs.NewConfigFile().FindProject(name)
+	conf := configs.NewConfigFile()
+	project := conf.FindProject(name)
 	if (project == nil) {
 		fmt.Printf("Project \"%s\" not found\n", name)
 		return nil;
@@ -102,7 +103,12 @@ func handlerUpAction(c *cli.Context) error {
 
 	fmt.Printf("Starting \"%v\"...\n\n", name)
 
-	docker.StartProxyContainer()
+	if conf.UseVirtualHost {
+		docker.StartProxyContainer()
+	} else {
+		docker.FinishProxyContainer()
+	}
+
 	docker.StartProjectContainer(*project)
 
 	return nil
