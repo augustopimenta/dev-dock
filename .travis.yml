@@ -3,9 +3,10 @@ language: go
 go:
   - '1.8'
 
+go_import_path: devdock
+
 before_install:
   - mkdir -p $GOPATH/bin
   - curl https://glide.sh/get | sh
 
-before_script:
-  - glade install -y
+install: glade install -y
