@@ -14,3 +14,6 @@ before_install:
 install: glide install -v
 
 script: go build
+
+after_success:
+  - test -n "$TRAVIS_TAG" && curl -sL https://git.io/goreleaser | bash
