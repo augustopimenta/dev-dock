@@ -4,8 +4,7 @@ import (
 	"os"
 	"fmt"
 	"strings"
-	"strconv"
-	"os/exec"
+	"os/user"
 
 	"devdock/docker"
 	"devdock/configs"
@@ -144,20 +143,13 @@ func handleDownAction(c *cli.Context) error {
 }
 
 func checkForRootAccess() {
-	cmd := exec.Command("id", "-u")
-	output, err := cmd.Output()
+	user, err := user.Current()
 
 	if err != nil {
 		panic(err)
 	}
 
-	id, err := strconv.Atoi(string(output[:len(output)-1]))
-
-	if err != nil {
-		panic(err)
-	}
-
-	if id != 0 {
+	if user.Uid != "0" {
 		fmt.Println("Error: You need root access to manage Docker containers and hosts file!")
 		os.Exit(0)
 	}
